@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLO Detection with VLM Assistant</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 40px);
+        }
+        
+        .video-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .control-panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .video-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        
+        #video-stream {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 10px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .status-panel {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+        }
+        
+        .status-label {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .status-value {
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            max-height: 400px;
+        }
+        
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            max-width: 100%;
+        }
+        
+        .message.user {
+            background: #e3f2fd;
+            text-align: right;
+        }
+        
+        .message.assistant {
+            background: #f1f8e9;
+        }
+        
+        .message-content {
+            margin-bottom: 5px;
+            line-height: 1.4;
+        }
+        
+        .message-time {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+        
+        #chat-prompt {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 40px;
+        }
+        
+        #chat-prompt:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .loading {
+            display: none;
+            color: #667eea;
+            font-style: italic;
+        }
+        
+        .title {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="video-section">
+            <h1 class="title">🎥 YOLO Object Detection</h1>
+            <div class="video-container">
+                <img id="video-stream" src="{{ url_for('video_feed') }}" alt="Video Stream">
+            </div>
+            <div class="controls">
+                <button id="toggle-detection" class="btn btn-primary">Toggle Detection</button>
+                <button id="toggle-gpu" class="btn btn-secondary">Toggle GPU</button>
+            </div>
+        </div>
+        
+        <div class="control-panel">
+            <h2 class="title">🤖 VLM Assistant</h2>
+            
+            <div class="status-panel">
+                <div class="status-item">
+                    <span class="status-label">Detection Status:</span>
+                    <span id="detection-status" class="status-value status-inactive">OFF</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">GPU Status:</span>
+                    <span id="gpu-status" class="status-value status-active">ON</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Person Count:</span>
+                    <span id="person-count" class="status-value">0</span>
+                </div>
+            </div>
+            
+            <div class="chat-section">
+                <div id="chat-messages" class="chat-messages">
+                    <div class="message assistant">
+                        <div class="message-content">
+                            Hello! I'm your VLM assistant. I can analyze the camera feed and answer questions about what I see. Try asking me about the current scene!
+                        </div>
+                        <div class="message-time">System Message</div>
+                    </div>
+                </div>
+                
+                <div class="checkbox-container">
+                    <input type="checkbox" id="include-image" checked>
+                    <label for="include-image">Include current frame in analysis</label>
+                </div>
+                
+                <div class="chat-input">
+                    <textarea id="chat-prompt" placeholder="Ask me about the video feed..." rows="2"></textarea>
+                    <button id="send-message" class="btn btn-primary">Send</button>
+                </div>
+                
+                <div id="loading" class="loading">Thinking...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Socket.IO
+        const socket = io();
+        
+        // DOM elements
+        const toggleDetectionBtn = document.getElementById('toggle-detection');
+        const toggleGpuBtn = document.getElementById('toggle-gpu');
+        const detectionStatus = document.getElementById('detection-status');
+        const gpuStatus = document.getElementById('gpu-status');
+        const personCount = document.getElementById('person-count');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatPrompt = document.getElementById('chat-prompt');
+        const sendMessageBtn = document.getElementById('send-message');
+        const includeImageCheckbox = document.getElementById('include-image');
+        const loading = document.getElementById('loading');
+        
+        // Socket event handlers
+        socket.on('connect', function() {
+            console.log('Connected to server');
+        });
+        
+        socket.on('detection_data', function(data) {
+            updateStatus(data);
+        });
+        
+        socket.on('status', function(data) {
+            updateStatus(data);
+        });
+        
+        function updateStatus(data) {
+            // Update detection status
+            if (data.detection_enabled) {
+                detectionStatus.textContent = 'ON';
+                detectionStatus.className = 'status-value status-active';
+                toggleDetectionBtn.textContent = 'Disable Detection';
+                toggleDetectionBtn.className = 'btn btn-danger';
+            } else {
+                detectionStatus.textContent = 'OFF';
+                detectionStatus.className = 'status-value status-inactive';
+                toggleDetectionBtn.textContent = 'Enable Detection';
+                toggleDetectionBtn.className = 'btn btn-success';
+            }
+            
+            // Update GPU status
+            if (data.gpu_enabled) {
+                gpuStatus.textContent = 'ON';
+                gpuStatus.className = 'status-value status-active';
+                toggleGpuBtn.textContent = 'Use CPU';
+            } else {
+                gpuStatus.textContent = 'OFF';
+                gpuStatus.className = 'status-value status-inactive';
+                toggleGpuBtn.textContent = 'Use GPU';
+            }
+            
+            // Update person count
+            personCount.textContent = data.person_count || 0;
+        }
+        
+        // Toggle detection
+        toggleDetectionBtn.addEventListener('click', function() {
+            fetch('/toggle_detection', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Detection toggled:', data.detection_enabled);
+                })
+                .catch(error => {
+                    console.error('Error toggling detection:', error);
+                });
+        });
+        
+        // Toggle GPU
+        toggleGpuBtn.addEventListener('click', function() {
+            fetch('/toggle_gpu', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('GPU toggled:', data.gpu_enabled);
+                })
+                .catch(error => {
+                    console.error('Error toggling GPU:', error);
+                });
+        });
+        
+        // Send message to VLM
+        function sendMessage() {
+            const prompt = chatPrompt.value.trim();
+            if (!prompt) return;
+            
+            // Add user message to chat
+            addMessage('user', prompt);
+            chatPrompt.value = '';
+            
+            // Show loading
+            loading.style.display = 'block';
+            sendMessageBtn.disabled = true;
+            
+            // Send to backend
+            fetch('/query_vlm', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    include_image: includeImageCheckbox.checked
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                addMessage('assistant', data.response);
+            })
+            .catch(error => {
+                addMessage('assistant', 'Sorry, I encountered an error: ' + error.message);
+            })
+            .finally(() => {
+                loading.style.display = 'none';
+                sendMessageBtn.disabled = false;
+            });
+        }
+        
+        function addMessage(type, content) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            const now = new Date().toLocaleTimeString();
+            messageDiv.innerHTML = `
+                <div class="message-content">${content}</div>
+                <div class="message-time">${now}</div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        // Event listeners
+        sendMessageBtn.addEventListener('click', sendMessage);
+        
+        chatPrompt.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        // Load initial status
+        fetch('/status')
+            .then(response => response.json())
+            .then(data => {
+                updateStatus(data);
+            })
+            .catch(error => {
+                console.error('Error loading status:', error);
+            });
+    </script>
+</body>
+</html>
+
