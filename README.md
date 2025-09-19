@@ -238,5 +238,4 @@ self.vlm_model = "gemma2-3b-vlm"    # Default
 - **Ollama**: For local LLM infrastructure
 - **Google**: For Gemma VLM models
 
-**Built with ❤️ for NVIDIA Jetson Developers**
 ```
