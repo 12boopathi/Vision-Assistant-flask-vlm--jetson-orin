@@ -5,14 +5,13 @@ A real-time object detection application combining YOLOv11 with Vision Language 
 ![Python](https://img.shields.io/badge/python-3.10-blue.svg)
 ![JetPack](https://img.shields.io/badge/JetPack-6.0-green.svg)
 ![CUDA](https://img.shields.io/badge/CUDA-Enabled-orange.svg)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 
 ## 📹 Demo
 
 Here’s a demo video of the project in action:
 
-👉 ![Output Demo](output.mp4)
+👉 ![Output Demo](output-demo.mp4)
 
 
 
