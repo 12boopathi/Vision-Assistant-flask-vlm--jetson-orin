@@ -7,6 +7,15 @@ A real-time object detection application combining YOLOv11 with Vision Language 
 ![CUDA](https://img.shields.io/badge/CUDA-Enabled-orange.svg)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
+
+## 📹 Demo
+
+Here’s a demo video of the project in action:
+
+👉 ![Output Demo](output.mp4)
+
+
+
 ## 🚀 Features
 
 - **Real-time Object Detection**: YOLOv11 powered person detection with live webcam streaming
