@@ -52,8 +52,8 @@ sudo apt show nvidia-jetpack
 ### 2. Clone Repository
 
 ```
-git clone 
-cd yolo-vlm-detection
+git clone https://github.com/12boopathi/Vision-Assistant-flask-vlm--jetson-orin.git
+cd Vision-Assistant-flask-vlm--jetson-orin
 ```
 
 ### 3. Python 3.10 Virtual Environment Setup
@@ -115,7 +115,7 @@ yolo-vlm-detection/
 ### 1. Activate Environment
 
 ```
-cd yolo-vlm-detection
+cd Vision-Assistant-flask-vlm--jetson-orin
 source venv/bin/activate
 ```
 
